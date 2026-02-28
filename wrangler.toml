@@ -1,0 +1,15 @@
+name = "cron" # 你的 Worker 名字，会成为 URL 的一部分
+main = "worker.js"      # 入口文件，请将下载的代码命名为 index.js
+compatibility_date = "2023-10-30"
+
+# 绑定刚才创建的 KV
+# [[kv_namespaces]]
+# binding = "KEEP_ALIVE_DB"         # 这个名字必须和代码中的 env.KEEP_ALIVE_DB 保持一致
+# id = "0e5c15689c2545d8b8a829107955b4a9" # 粘贴你上一步获取的 ID
+
+# 配置定时任务，每天执行一次
+[triggers]
+crons = ["0 2 * * *"] # UTC 时间，表示每天 02:00 执行。可自行修改为北京时间上午10点等。
+
+# [vars]
+# 这里可以放非敏感信息，但为了统一管理，我们推荐使用 secrets

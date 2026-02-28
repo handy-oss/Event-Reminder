@@ -773,3 +773,20 @@ const DEFAULT_HEADERS = {
           });
       } catch (e) { console.error('Email Send Error:', e); }
   }
+
+    async function fetchWithTimeout(url) {
+        const TIMEOUT = 5000;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), TIMEOUT);
+        try {
+            await fetch(url, {
+                signal: controller.signal,
+                headers:{"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+            });
+            console.log(`✅ 成功: ${url}`);
+        } catch (error) {
+            console.warn(`❌ 访问失败: ${url}, 错误: ${error.message}`);
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
