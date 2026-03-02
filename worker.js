@@ -104,8 +104,8 @@ const DEFAULT_HEADERS = {
                    } else {
                        item.lastDate = now.toLocaleDateString("en-CA");
                    }
-                   isUp = true;
                }
+              isUp = true;
           }
       }
       if (isUp) {
