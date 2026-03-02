@@ -115,8 +115,10 @@ const DEFAULT_HEADERS = {
           } catch(e) { console.log('TG Err', e); }
       }
   
-      if (item.notifyEmail && env.RESEND_API_KEY && env.RESEND_TO) {
-          const htmlContent = `
+      if (item.notifyEmail && env.RESEND_API_KEY && env.RESEND_FROM) {
+          const toAddresses = item.notifyEmail.split(',').map(e => e.trim()).filter(e => e);
+          if (toAddresses.length) {
+              const htmlContent = `
               <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
                   <h2 style="color: #3b82f6; margin-top:0;">${icon} ${msgTitle}</h2>
                   <p style="font-size: 16px;"><strong>剩余天数：</strong> <span style="color: ${days <= 7 ? 'red' : 'black'}">${days} 天</span></p>
@@ -125,16 +127,14 @@ const DEFAULT_HEADERS = {
                   <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 20px 0;">
                   <p style="font-size: 12px; color: #6b7280;">来自事件提醒助手</p>
               </div>`;
-          
-          await sendResendEmail(env, `${icon} ${msgTitle} (剩余 ${days} 天)`, htmlContent);
+
+              await sendResendEmail(env, toAddresses, `${icon} ${msgTitle} (剩余 ${days} 天)`, htmlContent);
+          }
       }
   }
   
-  async function sendResendEmail(env, subject, html) {
-      const from = env.RESEND_FROM || 'onboarding@resend.dev';
-      const toEnv = env.RESEND_TO;
-      const toAddresses = toEnv ? toEnv.split(',').map(e => e.trim()).filter(e => e) : [];
-      if (!toAddresses.length) return;
+  async function sendResendEmail(env, toAddresses, subject, html) {
+      const from = env.RESEND_FROM;
   
       try {
           await fetch('https://api.resend.com/emails', {

@@ -146,8 +146,7 @@ wrangler deploy
 | `TG_BOT_TOKEN` | 否 | Telegram Bot 的 Token，格式如 `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`。 |
 | `TG_CHAT_ID` | 否 | 接收通知的 Telegram 用户或频道的 Chat ID。 |
 | `RESEND_API_KEY` | 否 | Resend 服务的 API Key，格式如 `re_12345678_AbcDEF1234`。 |
-| `RESEND_TO` | 否 | 接收提醒邮件的邮箱地址。如果需要发送给多个地址，用逗号 `,` 分隔。 |
-| `RESEND_FROM` | 否 | 发送提醒邮件时显示的发件人地址。**必须是你在 Resend 验证过的域名邮箱**。如果留空，默认为 `onboarding@resend.dev`。 |
+| `RESEND_FROM` | 否 | 发送提醒邮件时显示的发件人地址。**必须是你在 Resend 验证过的域名邮箱**。如 `onboarding@resend.dev`。 |
 
 
 ## 📝 使用方法

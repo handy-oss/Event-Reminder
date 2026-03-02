@@ -295,11 +295,9 @@
                             <input class="form-check-input" type="checkbox" id="notifyTg" checked>
                         </div>
                     </div>
-                    <div class="p-2 rounded-3 border border-color d-flex justify-content-between align-items-center">
-                        <label class="form-label m-0">Email (Resend)</label>
-                        <div class="form-check form-switch m-0">
-                            <input class="form-check-input" type="checkbox" id="notifyEmail">
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email (Resend)</label>
+                        <input type="text" class="form-control fw-bold" id="notifyEmail" placeholder="接收提醒邮件地址,多个地址用逗号 `,` 分隔">
                     </div>
 
                 </form>
@@ -557,7 +555,8 @@
                   document.getElementById('notes').value = item.notes || '';
                   document.getElementById('reminders').value = (item.reminders || [30,15,7,3,1,0]).join(', ');
                   document.getElementById('notifyTime').value = item.notifyTime || '10:00'; 
-                  document.getElementById('notifyTg').checked = item.notify; document.getElementById('notifyEmail').checked = item.notifyEmail || false;
+                  document.getElementById('notifyTg').checked = item.notify;
+                  document.getElementById('notifyEmail').value = item.notifyEmail || '';
                   document.getElementById('btnDel').style.display = 'block';
                   document.getElementById('btnTest').style.display = 'inline-flex'; 
   
@@ -578,7 +577,8 @@
                   
                   const item = {
                       id, mode, name, notes: document.getElementById('notes').value,
-                      notify: document.getElementById('notifyTg').checked, notifyEmail: document.getElementById('notifyEmail').checked,
+                      notify: document.getElementById('notifyTg').checked,
+                      notifyEmail: document.getElementById('notifyEmail').value,
                       reminders: document.getElementById('reminders').value.split(/[,，]/).map(n=>parseInt(n.trim())).filter(n=>!isNaN(n)),
                       notifyTime: document.getElementById('notifyTime').value || '10:00',
                       status: 'active'
