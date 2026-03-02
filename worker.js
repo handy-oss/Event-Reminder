@@ -102,7 +102,7 @@ const DEFAULT_HEADERS = {
                    if (item.mode === 'target') {
                        item.status = 'archived';
                    } else {
-                       item.lastDate = now.toLocaleDateString();
+                       item.lastDate = now.toLocaleDateString("en-CA");
                    }
                    isUp = true;
                }
@@ -118,7 +118,7 @@ const DEFAULT_HEADERS = {
       if (force) icon = "📢 [测试]";
   
       const msgTitle = `[事件提醒] ${item.name}`;
-      const msgBody = `⏳ 剩余: ${days} 天\n📅 到期: ${dueDate.toLocaleDateString()}\n📝 备注: ${item.notes || '无'}`;
+      const msgBody = `⏳ 剩余: ${days} 天\n📅 到期: ${dueDate.toLocaleDateString("en-CA")}\n📝 备注: ${item.notes || '无'}`;
       let result = [];
       if (item.notify && env.TG_BOT_TOKEN && env.TG_CHAT_ID) {
           const tgMsg = `${icon} **${msgTitle}**\n\n${msgBody}`;
@@ -146,7 +146,7 @@ const DEFAULT_HEADERS = {
               <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
                   <h2 style="color: #3b82f6; margin-top:0;">${icon} ${msgTitle}</h2>
                   <p style="font-size: 16px;"><strong>剩余天数：</strong> <span style="color: ${days <= 7 ? 'red' : 'black'}">${days} 天</span></p>
-                  <p><strong>到期日期：</strong> ${dueDate.toLocaleDateString()}</p>
+                  <p><strong>到期日期：</strong> ${dueDate.toLocaleDateString("en-CA")}</p>
                   <p><strong>备注信息：</strong><br>${item.notes || '无'}</p>
                   <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 20px 0;">
                   <p style="font-size: 12px; color: #6b7280;">来自事件提醒助手</p>
@@ -167,7 +167,7 @@ const DEFAULT_HEADERS = {
                   const body = {
                       title: icon + msgTitle,
                       daysRemaining: days,
-                      expirationDate: dueDate.toLocaleDateString(),
+                      expirationDate: dueDate.toLocaleDateString("en-CA"),
                       remark: item.notes || '无',
                       info: msgBody,
                   }
