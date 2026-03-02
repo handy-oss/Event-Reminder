@@ -13,3 +13,15 @@ crons = ["0 2 * * *"] # UTC 时间，表示每天 02:00 执行。可自行修改
 
 # [vars]
 # 这里可以放非敏感信息，但为了统一管理，我们推荐使用 secrets
+
+[assets]
+binding = "assets"		#静态资源绑定名默认不可修改
+directory = "./pubic"	#前端vue项目打包的静态资源存放位置,默认dist
+# not_found_handling = "single-page-application" #不存在静态资源时返回index.html
+
+# 如果设为 false (默认值)：Cloudflare 会先看 dist 文件夹里有没有对应的文件。如果有（比如 logo.png），直接返回文件，不运行你的 JS 代码。
+# 如果设为 true：每一个请求（无论是图片、HTML 还是 API）都会先进入你的 Worker JS 逻辑。
+run_worker_first = true
+
+# [build]
+# command = "pnpm --prefix ../mail-vue install && pnpm --prefix ../mail-vue run build"
