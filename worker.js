@@ -13,7 +13,7 @@ const DEFAULT_HEADERS = {
   export default {
     async fetch(request, env, ctx) {
       const url = new URL(request.url);
-      if (url.pathname === '/') return env.assets.fetch(req);
+      if (url.pathname === '/') return env.assets.fetch(request);
       if (url.pathname.startsWith('/api')) {
           if (request.headers.get('x-auth-token') !== env.AUTH_PASSWORD) return new Response('Unauthorized', { status: 401 });
       }
