@@ -67,9 +67,12 @@ const DEFAULT_HEADERS = {
           const last = parseLocal(item.lastDate);
           const due = new Date(last);
           const unit = item.cycleUnit || 'm'; 
-          const val = parseInt(item.cycleValue || item.cycle); 
-          if (unit === 'd') due.setDate(due.getDate() + val); 
-          else due.setMonth(due.getMonth() + val);
+          const val = parseInt(item.cycleValue);
+          if (unit === 'd') {
+              due.setDate(due.getDate() + val);
+          } else if (unit === 'n') {
+              due.setMinutes(due.getMinutes() + val);
+          } else due.setMonth(due.getMonth() + val);
           return due;
       }
   }
@@ -80,10 +83,11 @@ const DEFAULT_HEADERS = {
       const shDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
       const now = new Date(shDateStr);
       now.setHours(0,0,0,0);
-      
+
+      let isUp = false;
       for (const item of list) {
           if (item.status === 'archived') continue;
-          if (!item.notify && !item.notifyEmail) continue; 
+          if (!item.notify && !item.notifyEmail && !item.notifyWebhook) continue;
   
           let dueDate = calculateDueDate(item);
           dueDate.setHours(0,0,0,0);
@@ -92,9 +96,20 @@ const DEFAULT_HEADERS = {
           const days = Math.round(diff / (1000 * 3600 * 24));
           const reminders = item.reminders || [15, 7, 3, 0];
   
-          if (reminders.includes(days) || (days < 0 && days % 7 === 0)) {
+          if (reminders.includes(days) || (days <= 0 && days % 7 === 0)) {
                await sendNotification(env, item, days, dueDate, false);
+               if (days <= 0) {
+                   if (item.mode === 'target') {
+                       item.status = 'archived';
+                   } else {
+                       item.lastDate = now.toLocaleDateString();
+                   }
+                   isUp = true;
+               }
           }
+      }
+      if (isUp) {
+          await env.KEEP_ALIVE_DB.put('accounts', JSON.stringify(list));
       }
   }
   
@@ -104,15 +119,24 @@ const DEFAULT_HEADERS = {
   
       const msgTitle = `[事件提醒] ${item.name}`;
       const msgBody = `⏳ 剩余: ${days} 天\n📅 到期: ${dueDate.toLocaleDateString()}\n📝 备注: ${item.notes || '无'}`;
-      
+      let result = [];
       if (item.notify && env.TG_BOT_TOKEN && env.TG_CHAT_ID) {
           const tgMsg = `${icon} **${msgTitle}**\n\n${msgBody}`;
+          let resp = "TG：✅ok";
           try {
-              await fetch(`https://api.telegram.org/bot${env.TG_BOT_TOKEN}/sendMessage`, {
+              const response = await fetch(`https://api.telegram.org/bot${env.TG_BOT_TOKEN}/sendMessage`, {
                   method: 'POST', headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ chat_id: env.TG_CHAT_ID, text: tgMsg, parse_mode: 'Markdown' })
               });
-          } catch(e) { console.log('TG Err', e); }
+              if (response.status < 200 || response.status >= 400) {
+                  const str = await response.text()
+                  resp = `TG：❌status=>${response.status},statusText=>${response.statusText},body=>${str.substring(0,500)}`
+              }
+          } catch(e) {
+              console.log('TG Err', e);
+              resp = "TG：❌" + e.message
+          }
+          result.push(resp)
       }
   
       if (item.notifyEmail && env.RESEND_API_KEY && env.RESEND_FROM) {
@@ -128,36 +152,75 @@ const DEFAULT_HEADERS = {
                   <p style="font-size: 12px; color: #6b7280;">来自事件提醒助手</p>
               </div>`;
 
-              await sendResendEmail(env, toAddresses, `${icon} ${msgTitle} (剩余 ${days} 天)`, htmlContent);
+              result.push(await sendResendEmail(env, toAddresses, `${icon} ${msgTitle} (剩余 ${days} 天)`, htmlContent));
           }
       }
+
+      if (item.notifyWebhook) {
+          const hook = item.notifyWebhook.split(' ').map(e => e.trim()).filter(e => e);
+          if (hook.length) {
+              const method = hook.length >= 2 ? hook[0] : "POST";
+              const url = hook.length === 1 ? hook[0] : hook[1];
+              const methodList = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+              const hasBody = ["POST", "PUT", "PATCH", "DELETE"]
+              if (methodList.includes(method)) {
+                  const body = {
+                      title: icon + msgTitle,
+                      daysRemaining: days,
+                      expirationDate: dueDate.toLocaleDateString(),
+                      remark: item.notes || '无',
+                      info: msgBody,
+                  }
+                  result.push(await fetchWithTimeout(method, url, hasBody.includes(method) ? JSON.stringify(body) : null))
+              }
+          }
+      }
+      item.notifyResult = result;
   }
   
   async function sendResendEmail(env, toAddresses, subject, html) {
       const from = env.RESEND_FROM;
-  
+      let resp = "Email：✅ok";
       try {
-          await fetch('https://api.resend.com/emails', {
+          const response = await fetch('https://api.resend.com/emails', {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ from: from, to: toAddresses, subject: subject, html: html })
           });
-      } catch (e) { console.error('Email Send Error:', e); }
+          if (response.status < 200 || response.status >= 400) {
+              const str = await response.text()
+              resp = `Email：❌status=>${response.status},statusText=>${response.statusText},body=>${str.substring(0,500)}`
+          }
+      } catch (e) {
+          console.error('Email Send Error:', e);
+          resp = "Email：❌" + e.message
+      }
+      return resp;
   }
 
-    async function fetchWithTimeout(url) {
+    async function fetchWithTimeout(method, url, data) {
         const TIMEOUT = 5000;
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), TIMEOUT);
+        let resp = "Webhook：✅ok";
         try {
-            await fetch(url, {
+            const response = await fetch(url, {
+                method,
                 signal: controller.signal,
-                headers:{"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+                headers:{"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36", 'Content-Type': 'application/json'},
+                body: data
             });
             console.log(`✅ 成功: ${url}`);
+
+            if (response.status < 200 || response.status >= 400) {
+                const str = await response.text()
+                resp = `Webhook：❌status=>${response.status},statusText=>${response.statusText},body=>${str.substring(0,500)}`
+            }
         } catch (error) {
             console.warn(`❌ 访问失败: ${url}, 错误: ${error.message}`);
+            resp = "Webhook：❌" + error.message
         } finally {
             clearTimeout(timeout);
         }
+        return resp
     }
