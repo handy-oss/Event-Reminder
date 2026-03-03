@@ -17,7 +17,6 @@
 ## ✨ 功能特性
 
 - **无服务器架构**: 无需购买 VPS，完全运行在 Cloudflare 的全球网络上，稳定、高效且免费额度充足。
-- **一体化设计**: 单个 JS 文件包含前端 UI、后端 API 和定时任务，部署极其简单。
 - **数据持久化**: 使用 Cloudflare KV 作为数据库，安全存储您的事件数据。
 - **精美响应式 UI**:
     - 支持浅色/深色模式，并能根据系统设置自动切换。
@@ -25,11 +24,12 @@
     - 状态自动判断（良好、临近、紧急、逾期）并以不同颜色高亮。
     - 移动端优先，在手机和桌面端均有优秀体验。
 - **两种提醒模式**:
-    - **循环重复**: 适用于如“每3个月”或“每年”的周期性任务。完成任务后点击“刷新”即可重置计时器。
-    - **单次提醒**: 适用于有明确截止日期的一次性事件。
+    - **循环重复**: 适用于如“每3个月”或“每年”的周期性任务。完成任务后自动重置计时器。
+    - **单次提醒**: 适用于有明确截止日期的一次性事件，过期后每7天提醒一次。
 - **多渠道通知**:
     - **Telegram Bot**: 通过您自己的机器人即时发送提醒。
     - **Email (Resend)**: 通过 Resend 服务发送格式精美的 HTML 邮件提醒。
+    - **Webhook**: 通过链接推送到指定服务器。
     - 可为每个事件独立开关不同的通知渠道。
 - **高度自定义**:
     - 可自定义提醒规则，例如在到期前 30、15、7、3、1、0 天发送通知。
@@ -47,106 +47,45 @@
 ### 1. 准备工作
 
 - 一个 Cloudflare 账号。
-- 在本地安装 [Node.js](https://nodejs.org/en/) 和 [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)。
-
-  ```bash
-  npm install -g wrangler
-  ```
-
-- 登录 Wrangler：
-
-  ```bash
-  wrangler login
-  ```
 
 ### 2. 获取代码
 
-将本仓库的代码克隆或下载到本地。
+将本仓库的代码克隆到自己的GitHub。
 
 ### 3. 创建 KV 存储空间
 
-我们需要一个 KV 命名空间来存储事件数据。执行以下命令创建，并**记下返回的 `id`**。
+在Cloudflare创建一个 KV 命名空间来存储事件数据，名字自己定义
 
-```bash
-# 将 "KEEP_ALIVE_DB" 替换为你喜欢的名字
-wrangler kv:namespace create "KEEP_ALIVE_DB"
-```
+### 4. 创建workers
 
-执行后会返回类似下面的信息，复制 `id` 的值。
-```
-✨ Successfully created namespace "KEEP_ALIVE_DB" with ID: 0e5c15689c2545d8b8a829107955b4a9
-```
+1.在Cloudflare创建一个work应用，关联到自己的GitHub，选择刚刚克隆到自己项目的仓库
 
-### 4. 配置 `wrangler.toml`
-
-在项目根目录创建一个 `wrangler.toml` 文件，这是 Worker 的核心配置文件。将以下内容复制进去，并根据你的信息进行修改。
-
-```toml
-name = "event-reminder" # 你的 Worker 名字，会成为 URL 的一部分
-main = "index.js"      # 入口文件，请将下载的代码命名为 index.js
-compatibility_date = "2023-10-30"
-
-# 绑定刚才创建的 KV
-[[kv_namespaces]]
-binding = "KEEP_ALIVE_DB"         # 这个名字必须和代码中的 env.KEEP_ALIVE_DB 保持一致
-id = "0e5c15689c2545d8b8a829107955b4a9" # 粘贴你上一步获取的 ID
-
-# 配置定时任务，每天执行一次
-[triggers]
-crons = ["0 2 * * *"] # UTC 时间，表示每天 02:00 执行。可自行修改为北京时间上午10点等。
-
-# [vars]
-# 这里可以放非敏感信息，但为了统一管理，我们推荐使用 secrets
-```
-**注意**: `crons` 使用 UTC 时间。`"0 2 * * *"` 对应世界标准时间凌晨2点，即北京时间上午10点。
+2.选择进入应用中选择绑定，添加KV绑定，指定变量名称为`KEEP_ALIVE_DB`,KV 命名空间为上一步创建的KV。
 
 ### 5. 配置环境变量 (Secrets)
 
 这是最关键的一步，你需要将所有敏感信息（如密码、API Key）通过 Wrangler 命令安全地配置。
 
+在worker应用中的设置->变量和机密，添加变量
+
 **必须配置的：**
 ```bash
-# 设置你的访问密码
-wrangler secret put AUTH_PASSWORD
-```
-
-**可选配置的（根据你的需要选择）：**
-
-- **Telegram Bot 配置** ([如何创建机器人和获取信息?](https://core.telegram.org/bots#6-bot-api))
-  ```bash
-  wrangler secret put TG_BOT_TOKEN
-  wrangler secret put TG_CHAT_ID
-  ```
-
-- **Resend 邮件配置** ([登录 Resend 获取 API Key](https://resend.com/))
-  ```bash
-  wrangler secret put RESEND_API_KEY
-  wrangler secret put RESEND_TO  # 接收邮件的邮箱，多个用逗号分隔
-  wrangler secret put RESEND_FROM # 发件人地址 (可选, 默认为 onboarding@resend.dev)
-  ```
-
-在执行每个 `wrangler secret put` 命令后，它会提示你输入相应的值。
-
-### 6. 部署
-
-完成以上所有配置后，执行一条命令即可部署！
-
-```bash
-wrangler deploy
+# 设置你的访问密码（文本）
+AUTH_PASSWORD
 ```
 
 部署成功后，Wrangler 会输出你的 Worker 访问地址 `https://event-reminder.<YOUR_SUBDOMAIN>.workers.dev`。现在你可以打开它开始使用了！
 
 ## 🛠️ 环境变量说明
 
-| 变量名 | 是否必须 | 说明 |
-| :--- | :--- | :--- |
-| `AUTH_PASSWORD` | **是** | 访问此应用的密码。 |
-| `KEEP_ALIVE_DB` | **是** | KV 存储空间的绑定名称，在 `wrangler.toml` 中配置。 |
-| `TG_BOT_TOKEN` | 否 | Telegram Bot 的 Token，格式如 `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`。 |
-| `TG_CHAT_ID` | 否 | 接收通知的 Telegram 用户或频道的 Chat ID。 |
-| `RESEND_API_KEY` | 否 | Resend 服务的 API Key，格式如 `re_12345678_AbcDEF1234`。 |
-| `RESEND_FROM` | 否 | 发送提醒邮件时显示的发件人地址。**必须是你在 Resend 验证过的域名邮箱**。如 `onboarding@resend.dev`。 |
+| 变量名 | 是否必须  | 说明                                                                                                                              |
+| :--- |:------|:--------------------------------------------------------------------------------------------------------------------------------|
+| `AUTH_PASSWORD` | **是** | 访问此应用的密码。                                                                                                                       |
+| `KEEP_ALIVE_DB` | 否   | KV 存储空间的绑定名称，在 `wrangler.toml` 中配置。也可以在worker应用中绑定                                                                              |
+| `TG_BOT_TOKEN` | 否     | Telegram Bot 的 Token，格式如 `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`。 [如何创建机器人和获取信息?](https://core.telegram.org/bots#6-bot-api) |
+| `TG_CHAT_ID` | 否     | 接收通知的 Telegram 用户或频道的 Chat ID。                                                                                                  |
+| `RESEND_API_KEY` | 否     | Resend 服务的 API Key，格式如 `re_12345678_AbcDEF1234`。 [登录 Resend 获取 API Key](https://resend.com/)                                    |
+| `RESEND_FROM` | 否     | 发送提醒邮件时显示的发件人地址。**必须是你在 Resend 验证过的域名邮箱**。如 `onboarding@resend.dev`。                                                            |
 
 
 ## 📝 使用方法
