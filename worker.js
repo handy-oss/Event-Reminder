@@ -108,7 +108,7 @@ const DEFAULT_HEADERS = {
               continue;
           }
           // 指定时间提醒
-          if (nowStr !== item.notifyTime) {
+          if (minNow.toLocaleTimeString("en-CA", {hour: '2-digit', minute: '2-digit', hour12: false }) !== item.notifyTime) {
               continue;
           }
 
