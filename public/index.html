@@ -215,6 +215,14 @@
             color: white;
             transition: opacity 0.2s;
         }
+        .btn-action:not(:last-child) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        .btn-action+.btn-action {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
 
         .btn-archive-action {
             background: var(--bg-body);
@@ -811,9 +819,10 @@
 
                 let btnHtml = '';
                 if (this.tab === 'active') {
-                    btnHtml = item.mode === 'cycle'
-                        ? `<button class="btn-action" onclick="event.stopPropagation(); app.renew('${item.id}')"><i class="fas fa-sync-alt me-1"></i> 刷新</button>`
-                        : `<button class="btn-action btn-archive-action" onclick="event.stopPropagation(); app.archive('${item.id}')"><i class="fas fa-check"></i> 归档</button>`;
+                    btnHtml = `<div class="btn-group" role="group" aria-label="Basic example">
+  <button class="btn-action" onclick="event.stopPropagation(); app.renew('${item.id}')"><i class="fas fa-sync-alt me-1"></i> 重置刷新</button>
+<button class="btn-action btn-archive-action" onclick="event.stopPropagation(); app.archive('${item.id}')"><i class="fas fa-check"></i> 归档</button>
+</div>`;
                 } else {
                     btnHtml = `<button class="btn-action btn-archive-action" onclick="event.stopPropagation(); app.unarchive('${item.id}')"><i class="fas fa-undo"></i> 激活</button>`;
                 }
@@ -976,13 +985,15 @@
         async renew(id) {
             const item = this.data.find(i => i.id === id);
             if (!confirm(`确认【${item.name}】已完成？确定后将以当前时间开始重置`)) return;
+            const date = new Date();
             const shDate = new Intl.DateTimeFormat('en-CA', {
                 timeZone: 'Asia/Shanghai',
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
-            }).format(new Date());
-            item.lastDate = shDate;
+            }).format(date);
+            item.lastDate = `${shDate}T${date.toLocaleTimeString('en-CA', {timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false})}`;
+            item.targetDate = shDate;
             await this.api('/update', item);
             this.loadData(true);
         },

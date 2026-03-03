@@ -101,7 +101,7 @@ const DEFAULT_HEADERS = {
               dueDate.setSeconds(0, 0);
               const diff = dueDate - minNow;
               if (diff <= 0) {
-                  await sendNotification(env, item, 0, dueDate, false);
+                  item.notifyResult = await sendNotification(env, item, 0, dueDate, false);
                   item.lastDate = nowStr;
                   isUp = true;
               }
@@ -116,16 +116,15 @@ const DEFAULT_HEADERS = {
 
           const diff = dueDate - now;
           const days = Math.round(diff / (1000 * 3600 * 24));
-          const reminders = item.reminders || [15, 7, 3, 0];
+          const reminders = item.reminders || [15, 7, 3, 1, 0];
   
           if (reminders.includes(days) || (days <= 0 && days % 7 === 0)) {
-               await sendNotification(env, item, days, dueDate, false);
+              item.notifyResult = await sendNotification(env, item, days, dueDate, false);
                if (days <= 0) {
-                   if (item.mode === 'target') {
-                       item.status = 'archived';
-                   } else {
+                   if (item.mode === 'cycle') {
                        item.lastDate = nowStr;
                    }
+                   // item.status = 'archived';
                }
               isUp = true;
           }
@@ -197,7 +196,7 @@ const DEFAULT_HEADERS = {
               }
           }
       }
-      item.notifyResult = result;
+      return result;
   }
   
   async function sendResendEmail(env, toAddresses, subject, html) {
