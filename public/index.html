@@ -607,13 +607,14 @@
         init() {
             document.documentElement.setAttribute('data-theme', this.theme);
             this.updateThemeIcon();
+            const date = new Date();
             const shDate = new Intl.DateTimeFormat('en-CA', {
                 timeZone: 'Asia/Shanghai',
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
-            }).format(new Date());
-            document.getElementById('lastTime').value = shDate;
+            }).format(date);
+            document.getElementById('lastTime').value = `${shDate}T${date.toLocaleTimeString('en-CA', {timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false})}`;
             document.getElementById('targetTime').value = shDate;
 
             // 初始化自定义时间选择器DOM
@@ -878,13 +879,14 @@
             document.getElementById('editId').value = '';
             document.getElementById('btnDel').style.display = 'none';
             document.getElementById('btnTest').style.display = 'none';
+            const date = new Date();
             const shDate = new Intl.DateTimeFormat('en-CA', {
                 timeZone: 'Asia/Shanghai',
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
-            }).format(new Date());
-            document.getElementById('lastTime').value = shDate;
+            }).format(date);
+            document.getElementById('lastTime').value = `${shDate}T${date.toLocaleTimeString('en-CA', {timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false})}`;
             document.getElementById('targetTime').value = shDate;
             document.getElementById('cyclePreset').value = 'm-3';
             document.getElementById('notifyTime').value = '10:00';
