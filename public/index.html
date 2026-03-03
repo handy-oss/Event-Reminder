@@ -652,7 +652,7 @@
                 hCol.appendChild(div);
             }
             // 渲染分钟 00-55 (5分钟间隔)
-            for (let i = 0; i < 60; i += 5) {
+            for (let i = 0; i < 60; i += 1) {
                 const val = i.toString().padStart(2, '0');
                 const div = document.createElement('div');
                 div.className = 'time-item';

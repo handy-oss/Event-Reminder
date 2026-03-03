@@ -88,6 +88,7 @@ const DEFAULT_HEADERS = {
       const minDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(currentDate);
       const minNow = new Date(minDateStr);
       minNow.setSeconds(0, 0);
+      const nowStr = `${minNow.toLocaleDateString("en-CA")}T${minNow.toLocaleTimeString("en-CA", {hour: '2-digit', minute: '2-digit', hour12: false })}`
 
       let isUp = false;
       for (const item of list) {
@@ -98,16 +99,16 @@ const DEFAULT_HEADERS = {
 
           if (item.mode === 'cycle' && item.cycleUnit === 'n') {
               dueDate.setSeconds(0, 0);
-              const diff = dueDate - now;
+              const diff = dueDate - minNow;
               if (diff <= 0) {
                   await sendNotification(env, item, 0, dueDate, false);
-                  item.lastDate = `${minNow.toLocaleDateString("en-CA")}T${minNow.toLocaleTimeString("en-CA", {hour: '2-digit', minute: '2-digit', hour12: false })}`;
+                  item.lastDate = nowStr;
                   isUp = true;
               }
               continue;
           }
           // 指定时间提醒
-          if (minNow.toLocaleTimeString("en-CA", {hour: '2-digit', minute: '2-digit', hour12: false }) !== item.notifyTime) {
+          if (nowStr !== item.notifyTime) {
               continue;
           }
 
@@ -123,7 +124,7 @@ const DEFAULT_HEADERS = {
                    if (item.mode === 'target') {
                        item.status = 'archived';
                    } else {
-                       item.lastDate = now.toLocaleDateString("en-CA");
+                       item.lastDate = nowStr;
                    }
                }
               isUp = true;
