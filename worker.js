@@ -79,10 +79,15 @@ const DEFAULT_HEADERS = {
   
   async function runSchedule(env) {
       const list = (await env.KEEP_ALIVE_DB.get('accounts', { type: 'json' })) || [];
-      
-      const shDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+
+      const currentDate = new Date();
+      const shDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(currentDate);
       const now = new Date(shDateStr);
       now.setHours(0,0,0,0);
+
+      const minDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(currentDate);
+      const minNow = new Date(minDateStr);
+      minNow.setSeconds(0, 0);
 
       let isUp = false;
       for (const item of list) {
@@ -90,9 +95,25 @@ const DEFAULT_HEADERS = {
           if (!item.notify && !item.notifyEmail && !item.notifyWebhook) continue;
   
           let dueDate = calculateDueDate(item);
+
+          if (item.mode === 'cycle' && item.cycleUnit === 'n') {
+              dueDate.setSeconds(0, 0);
+              const diff = dueDate - now;
+              if (diff <= 0) {
+                  await sendNotification(env, item, 0, dueDate, false);
+                  item.lastDate = `${minNow.toLocaleDateString("en-CA")}T${minNow.toLocaleTimeString("en-CA", {hour: '2-digit', minute: '2-digit', hour12: false })}`;
+                  isUp = true;
+              }
+              continue;
+          }
+          // 指定时间提醒
+          if (minNow.toLocaleTimeString("en-CA", {hour: '2-digit', minute: '2-digit', hour12: false }) !== item.notifyTime) {
+              continue;
+          }
+
           dueDate.setHours(0,0,0,0);
-  
-          const diff = dueDate - now; 
+
+          const diff = dueDate - now;
           const days = Math.round(diff / (1000 * 3600 * 24));
           const reminders = item.reminders || [15, 7, 3, 0];
   
