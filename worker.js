@@ -189,7 +189,7 @@ const DEFAULT_HEADERS = {
                       title: icon + msgTitle,
                       daysRemaining: days,
                       expirationDate: dueDate.toLocaleDateString("en-CA"),
-                      remark: item.notes || '无',
+                      remark: item.notes || '',
                       info: msgBody,
                   }
                   result.push(await fetchWithTimeout(method, url, hasBody.includes(method) ? JSON.stringify(body) : null))
