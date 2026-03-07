@@ -90,7 +90,7 @@ const DEFAULT_HEADERS = {
       minNow.setSeconds(0, 0);
       const nowStr = `${minNow.toLocaleDateString("en-CA")}T${minNow.toLocaleTimeString("en-CA", {hour: '2-digit', minute: '2-digit', hour12: false })}`
 
-      let isUp = false;
+      let isUp = false, info = {};
       for (const item of list) {
           if (item.status === 'archived') continue;
           if (!item.notify && !item.notifyEmail && !item.notifyWebhook) continue;
@@ -104,6 +104,7 @@ const DEFAULT_HEADERS = {
                   item.notifyResult = await sendNotification(env, item, 0, dueDate, false);
                   item.lastDate = nowStr;
                   isUp = true;
+                  info[item.id] = item;
               }
               continue;
           }
@@ -126,11 +127,21 @@ const DEFAULT_HEADERS = {
                    }
                    // item.status = 'archived';
                }
+
               isUp = true;
+              info[item.id] = item;
           }
       }
       if (isUp) {
-          await env.KEEP_ALIVE_DB.put('accounts', JSON.stringify(list));
+          let lists = (await env.KEEP_ALIVE_DB.get('accounts', { type: 'json' })) || [];
+          for (let item of lists) {
+              if (info[item.id]) {
+                  item.lastDate = info[item.id].lastDate
+                  item.notifyResult = info[item.id].notifyResult
+              }
+          }
+
+          await env.KEEP_ALIVE_DB.put('accounts', JSON.stringify(lists));
       }
   }
   
