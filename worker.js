@@ -101,10 +101,12 @@ const DEFAULT_HEADERS = {
               dueDate.setSeconds(0, 0);
               const diff = dueDate - minNow;
               if (diff <= 0) {
-                  item.notifyResult = await sendNotification(env, item, 0, dueDate, false);
-                  item.lastDate = nowStr;
+                  info[item.id] = {
+                      notifyResult: await sendNotification(env, item, 0, dueDate, false),
+                      oldLastDate: item.lastDate,
+                      lastDate: nowStr,
+                  };
                   isUp = true;
-                  info[item.id] = item;
               }
               continue;
           }
@@ -120,24 +122,29 @@ const DEFAULT_HEADERS = {
           const reminders = item.reminders || [15, 7, 3, 1, 0];
   
           if (reminders.includes(days) || (days <= 0 && days % 7 === 0)) {
-              item.notifyResult = await sendNotification(env, item, days, dueDate, false);
+              info[item.id] = {
+                  notifyResult: await sendNotification(env, item, days, dueDate, false),
+                  oldLastDate: item.lastDate,
+                  lastDate: item.lastDate
+              }
                if (days <= 0) {
                    if (item.mode === 'cycle') {
-                       item.lastDate = nowStr;
+                       info[item.id].lastDate = nowStr;
                    }
                    // item.status = 'archived';
                }
 
               isUp = true;
-              info[item.id] = item;
           }
       }
       if (isUp) {
           let lists = (await env.KEEP_ALIVE_DB.get('accounts', { type: 'json' })) || [];
           for (let item of lists) {
               if (info[item.id]) {
-                  item.lastDate = info[item.id].lastDate
                   item.notifyResult = info[item.id].notifyResult
+                  if (item.lastDate && item.lastDate === info[item.id].oldLastDate) {
+                      item.lastDate = info[item.id].lastDate
+                  }
               }
           }
 
