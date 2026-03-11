@@ -100,7 +100,9 @@ const DEFAULT_HEADERS = {
           if (item.mode === 'cycle' && item.cycleUnit === 'n') {
               dueDate.setSeconds(0, 0);
               const diff = dueDate - minNow;
-              if (diff <= 0) {
+              const val = parseInt(item.cycleValue);
+              const min = Math.round(diff / (1000 * 60));
+              if (min % val === 0) {
                   info[item.id] = {
                       notifyResult: await sendNotification(env, item, 0, dueDate, false),
                       oldLastDate: item.lastDate,
